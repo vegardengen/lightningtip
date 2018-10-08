@@ -2,12 +2,14 @@ package backends
 
 import (
 	"context"
+	"strconv"
 	"encoding/hex"
 	"errors"
 	"io"
 	"io/ioutil"
 
 	"github.com/lightningnetwork/lnd/lnrpc"
+	"gopkg.in/gographics/imagick.v2/imagick"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
@@ -64,7 +66,7 @@ func (lnd *LND) Connect() error {
 }
 
 // GetInvoice gets and invoice from a node
-func (lnd *LND) GetInvoice(message string, amount int64, expiry int64) (invoice string, rHash string, err error) {
+func (lnd *LND) GetInvoice(message string, amount int64, expiry int64) (invoice string, rHash string, picture string, err error) {
 	var response *lnrpc.AddInvoiceResponse
 
 	response, err = lnd.client.AddInvoice(lnd.ctx, &lnrpc.Invoice{
@@ -74,10 +76,10 @@ func (lnd *LND) GetInvoice(message string, amount int64, expiry int64) (invoice 
 	})
 
 	if err != nil {
-		return "", "", err
+		return "", "", "", err
 	}
 
-	return response.PaymentRequest, hex.EncodeToString(response.RHash), err
+	return response.PaymentRequest, hex.EncodeToString(response.RHash), "/tips/" + hex.EncodeToString(response.RHash) + ".jpg", err
 }
 
 // InvoiceSettled checks if an invoice is settled by looking it up
@@ -93,6 +95,27 @@ func (lnd *LND) InvoiceSettled(rHash string) (settled bool, err error) {
 	if err != nil {
 		return false, err
 	}
+  imagick.Initialize()
+  defer imagick.Terminate()
+  var imerr error
+
+  mw := imagick.NewMagickWand()
+  dw := imagick.NewDrawingWand()
+  pw := imagick.NewPixelWand()
+
+  imerr = mw.ReadImage("/var/www/lnd/tips/kasan.jpg")
+  if imerr != nil {
+      panic(imerr)
+  }
+  pw.SetColor("black")
+  dw.SetFillColor(pw)
+  dw.SetFont("Verdana-Bold-Italic")
+  dw.SetFontSize(150)
+  dw.SetStrokeColor(pw)
+  dw.Annotation(25, 165, "I paid a random dude " + strconv.FormatInt(invoice.AmtPaidSat, 10) + " satoshis with Lightning Network")
+  dw.Annotation(25, 365, "but all I got was a picture of his dog")
+  mw.DrawImage(dw)
+  mw.WriteImage("/var/www/lnd/tips/" + rHash + ".jpg")
 
 	return invoice.Settled, err
 }
@@ -128,6 +151,29 @@ func (lnd *LND) SubscribeInvoices(publish PublishInvoiceSettled, rescan RescanPe
 			}
 
 			if invoice.Settled {
+        imagick.Initialize()
+        defer imagick.Terminate()
+        var imerr error
+
+        mw := imagick.NewMagickWand()
+        dw := imagick.NewDrawingWand()
+        pw := imagick.NewPixelWand()
+
+        imerr = mw.ReadImage("/var/www/lnd/tips/kasan.jpg")
+        if imerr != nil {
+            panic(imerr)
+        }
+        pw.SetColor("black")
+        dw.SetFillColor(pw)
+        dw.SetFont("Verdana-Bold-Italic")
+        dw.SetFontSize(150)
+        dw.SetStrokeColor(pw)
+        dw.Annotation(25, 165, "I paid a random dude " + strconv.FormatInt(invoice.AmtPaidSat, 10) + " satoshis with Lightning Network")
+        dw.Annotation(25, 365, "but all I got was a picture of his dog")
+       // dw.Annotation(25, 65, "I paid a random dude" + invoice.AmtPaid + " satoshis, but all I got was a picture of his dog")
+        mw.DrawImage(dw)
+        mw.WriteImage("/var/www/lnd/tips/" + hex.EncodeToString(invoice.RHash) + ".jpg")
+
 				go publish(invoice.PaymentRequest)
 			}
 
