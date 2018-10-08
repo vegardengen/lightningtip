@@ -116,6 +116,15 @@ func (lnd *LND) InvoiceSettled(rHash string) (settled bool, err error) {
   dw.Annotation(25, 365, "but all I got was a picture of his dog")
   mw.DrawImage(dw)
   mw.WriteImage("/var/www/lnd/tips/" + rHash + ".jpg")
+  newWidth := uint(250)
+  newHeight := uint(mw.GetImageHeight()*newWidth/mw.GetImageWidth())
+  imerr = mw.ResizeImage(newWidth, newHeight, imagick.FILTER_LANCZOS, 1)
+  if imerr != nil {
+    panic(imerr)
+  }
+  mw.WriteImage("/var/www/lnd/tips/" + rHash + ".jpg_small.jpg")
+  
+  
 
 	return invoice.Settled, err
 }
@@ -173,6 +182,13 @@ func (lnd *LND) SubscribeInvoices(publish PublishInvoiceSettled, rescan RescanPe
        // dw.Annotation(25, 65, "I paid a random dude" + invoice.AmtPaid + " satoshis, but all I got was a picture of his dog")
         mw.DrawImage(dw)
         mw.WriteImage("/var/www/lnd/tips/" + hex.EncodeToString(invoice.RHash) + ".jpg")
+        newWidth := uint(250)
+        newHeight := uint(mw.GetImageHeight()*newWidth/mw.GetImageWidth())
+        imerr = mw.ResizeImage(newWidth, newHeight, imagick.FILTER_LANCZOS, 1)
+        if imerr != nil {
+           panic(imerr)
+        }
+        mw.WriteImage("/var/www/lnd/tips/" + hex.EncodeToString(invoice.RHash) + ".jpg_small.jpg")
 
 				go publish(invoice.PaymentRequest)
 			}
