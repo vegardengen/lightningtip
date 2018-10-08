@@ -196,7 +196,7 @@ function showThankYouScreen(picture) {
     wrapper.innerHTML = "<p id=\"lightningTipLogo\">⚡</p>";
     wrapper.innerHTML += "<a id='lightningTipFinished'>Thank you for your tip!</a>";
     if (picture !== "") {
-      wrapper.innerHTML += "<a href=" + picture + "><img height=150 src=" + picture + "></a>";
+      wrapper.innerHTML += "<a href=" + picture + "><img width=250 src=" + picture + "></a>";
     }
 }
 
